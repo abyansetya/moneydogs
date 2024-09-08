@@ -17,7 +17,7 @@ This script automates tasks for the MoneyDogs-TON platform, including user authe
 └── README.md         # Documentation for the script.
 ```
 
-### `main.py`
+### `moneydogs.py`
 
 This is the main script that handles the logic for authentication, fetching tasks, and completing them. The script reads encoded messages from `query.txt`.
 
