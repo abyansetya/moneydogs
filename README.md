@@ -12,7 +12,7 @@ This script automates tasks for the MoneyDogs-TON platform, including user authe
 ## File Structure
 
 ```
-├── moneydogs.py           # Main Python script for running the automation.
+├── moneydogs.py      # Main Python script for running the automation.
 ├── query.txt         # Text file that contains encoded messages (one per line).
 └── README.md         # Documentation for the script.
 ```
