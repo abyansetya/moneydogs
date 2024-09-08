@@ -12,7 +12,7 @@ This script automates tasks for the MoneyDogs-TON platform, including user authe
 ## File Structure
 
 ```
-├── main.py           # Main Python script for running the automation.
+├── moneydogs.py           # Main Python script for running the automation.
 ├── query.txt         # Text file that contains encoded messages (one per line).
 └── README.md         # Documentation for the script.
 ```
@@ -28,9 +28,9 @@ This file contains one or more encoded messages, each on a new line. Each messag
 Example `query.txt` content:
 
 ```
-encoded_message_1
-encoded_message_2
-encoded_message_3
+query_id=
+query_id=
+query_id=
 ```
 
 ## Usage
@@ -49,7 +49,7 @@ encoded_message_3
    Run the script using the following command:
 
    ```bash
-   python main.py
+   python moneydogs.py
    ```
 
    The script will:
