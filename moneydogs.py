@@ -2,10 +2,16 @@ import requests
 import json
 import time
 from colorama import Fore, Style
+from urllib.parse import unquote
+import re
+from datetime import datetime
 
 RED = Fore.RED + Style.BRIGHT
 GREEN = Fore.GREEN + Style.BRIGHT
 YELLOW = Fore.YELLOW + Style.BRIGHT
+
+def get_formatted_time():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 def get_headers(access_token=None):
     headers = {
@@ -38,10 +44,9 @@ def auth(encoded_message, retries=3, delay=2):
     for attempt in range(retries):
         try:
             response = requests.post(url, headers=headers, data=json.dumps(body))
-            response.raise_for_status()  # Raise exception if HTTP status code is 4xx/5xx
+            response.raise_for_status()
             if response.status_code == 200:
-                response_json = response.json()
-                return response_json.get('token')  # Return the token
+                return response.json().get('token')
         except (requests.RequestException, ValueError) as e:
             print(f"{RED}Error getting token: {e}", flush=True)
             if attempt < retries - 1:
@@ -49,28 +54,42 @@ def auth(encoded_message, retries=3, delay=2):
                 time.sleep(delay)
             else:
                 return None
-    
-def get_tasks(token):
-    url = "https://api.moneydogs-ton.com/tasks"
+
+def get_username(query_id):
+    timestamp = Fore.MAGENTA + get_formatted_time() + Fore.RESET
+    try:
+        found = re.search('user=([^&]*)', query_id).group(1)
+        decoded_user_part = unquote(found)
+        user_obj = json.loads(decoded_user_part)
+        username = user_obj['username']
+        print(f"[{timestamp}] - Username: {Fore.GREEN}@{username}{Fore.RESET}")
+        return username
+    except Exception as e:
+        print(f"[{timestamp}] - {Fore.RED}Error: Failed to extract username: {e}{Fore.RESET}")
+        return None
+
+def get_tasks(token, url):
     headers = get_headers(token)
     response = requests.get(url, headers=headers)
+    response.raise_for_status()
+    return response.json()
 
-    if response.status_code == 200:
-        return response.json()
-    else:
-        response.raise_for_status()
-
-def complete_tasks(token, task_id):
-    url = f"https://api.moneydogs-ton.com/tasks/{task_id}/verify"
+def complete_tasks(token, task):
+    url = f"https://api.moneydogs-ton.com/tasks/{task['id']}/verify"
     headers = get_headers(token)
     headers.update({"content-type": "application/json"})
+    timestamp = Fore.MAGENTA + get_formatted_time() + Fore.RESET
 
     try:
-        response = requests.post(url, headers=headers)  # Fixed typo here (was `requets`)
+        response = requests.post(url, headers=headers)
         response.raise_for_status()
-        return response.json()
+        if response.status_code in [200, 201]:
+            print(f"[{timestamp}] - {task['title']}: {Fore.GREEN}Completed!{Fore.RESET}")
+        else:
+            print(f"[{timestamp}] - {task['title']}: {Fore.RED}Manual task only!{Fore.RESET}")
+        return response.status_code
     except (requests.RequestException, ValueError) as e:
-        print(Fore.RED + f"Failed to verify task {task_id}: {e}")
+        print(f"[{timestamp}] - {task['title']}: {Fore.RED}Manual task only!{Fore.RESET}")
         return None
 
 def run_account(encoded_message):
@@ -79,16 +98,13 @@ def run_account(encoded_message):
         if not token:
             return (None, 0)
 
-        tasks = get_tasks(token)
-        for task in tasks:
-            task_id = task.get('id')
-            task_name = task.get("title")
-            if task_id:
-                print(Fore.YELLOW + f"\nTrying to complete task: {task_name}")
-                result = complete_tasks(token, task_id)
-                if result:
-                    print(Fore.WHITE + f"Verification result for task {task_id}: {result}")
-            time.sleep(5)
+        username = get_username(encoded_message)
+        tasks = get_tasks(token, "https://api.moneydogs-ton.com/tasks")
+        tasks_featured = get_tasks(token, "https://api.moneydogs-ton.com/tasks?isFeatured=true")
+
+        for task in tasks + tasks_featured:
+            complete_tasks(token, task)
+            time.sleep(2)
 
     except requests.exceptions.RequestException as e:
         print(Fore.RED + f"An error occurred: {e}")
@@ -99,7 +115,9 @@ def main():
         queries = file.read().splitlines()
 
     for query in queries:
-        result = run_account(query)
+        run_account(query)
+
+    print("done")
 
 if __name__ == "__main__":
     main()
