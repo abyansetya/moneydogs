@@ -68,6 +68,23 @@ def get_username(query_id):
         print(f"[{timestamp}] - {Fore.RED}Error: Failed to extract username: {e}{Fore.RESET}")
         return None
 
+def check_in(token):
+    timestamp = Fore.MAGENTA + get_formatted_time() + Fore.RESET
+    url = "https://api.moneydogs-ton.com/daily-check-in"
+    headers = get_headers(token)
+
+    try:
+        response = requests.post(url, headers=headers)
+        if response.status_code == 200 or response.status_code == 201:
+            print(f"[{timestamp}] - {Fore.GREEN}Check-in successful{Fore.RESET}")
+        elif response.status_code == 400:
+            print(f"[{timestamp}] - {Fore.YELLOW}already check-in{Fore.RESET}")
+        else:
+            print(f"[{timestamp}] - {Fore.RED}Unexpected status: {response.status_code}{Fore.RESET}")
+    except requests.RequestException as e:
+        print(f"[{timestamp}] - {Fore.RED}Error during check-in: {e}{Fore.RESET}")
+
+
 def get_tasks(token, url):
     headers = get_headers(token)
     response = requests.get(url, headers=headers)
@@ -101,6 +118,7 @@ def run_account(encoded_message):
         username = get_username(encoded_message)
         tasks = get_tasks(token, "https://api.moneydogs-ton.com/tasks")
         tasks_featured = get_tasks(token, "https://api.moneydogs-ton.com/tasks?isFeatured=true")
+        checkin = check_in(token)
 
         for task in tasks + tasks_featured:
             complete_tasks(token, task)
